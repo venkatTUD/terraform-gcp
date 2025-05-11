@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'terraform-gcp/**'
+      - '**'
   pull_request:
     branches:
       - main
     paths:
-      - 'terraform-gcp/**'
+      - '**'
 
 permissions:
   contents: read
@@ -47,23 +47,23 @@ jobs:
 
     - name: Write GCP Credentials
       run: |
-        echo '${{ secrets.GCP_SA_KEY }}' > terraform-gcp/gcp-credentials.json
+        echo '${{ secrets.GCP_SA_KEY }}' > gcp-credentials.json
 
     - name: Terraform Init
       run: |
-        cd terraform-gcp/${{ matrix.environment }}
+        cd ${{ matrix.environment }}
         terraform init
 
     - name: Terraform Format
       run: |
-        cd terraform-gcp/${{ matrix.environment }}
+        cd ${{ matrix.environment }}
         terraform fmt -check
 
     - name: Terraform Plan
       if: github.event_name == 'pull_request'
       id: plan
       run: |
-        cd terraform-gcp/${{ matrix.environment }}
+        cd ${{ matrix.environment }}
         terraform plan -no-color > plan.txt
         echo "PLAN<<EOF" >> $GITHUB_OUTPUT
         cat plan.txt >> $GITHUB_OUTPUT
@@ -90,5 +90,5 @@ jobs:
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
-        cd terraform-gcp/${{ matrix.environment }}
+        cd ${{ matrix.environment }}
         terraform apply -auto-approve 
