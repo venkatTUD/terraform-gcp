@@ -11,6 +11,7 @@ resource "google_container_cluster" "primary" {
   location                 = var.gcp_region
   remove_default_node_pool = true
   deletion_protection      = true  # Enable deletion protection
+  initial_node_count       = 1     # Required initial node count
 
   release_channel {
     channel = "REGULAR"
