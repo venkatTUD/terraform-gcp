@@ -30,7 +30,7 @@ module "gke" {
   machine_type         = var.machine_type
   gcp_credentials_file = var.gcp_credentials_file
   # Pass the dev-specific disk size to the module
-  node_disk_size_gb    = var.dev_node_disk_size_gb
+  node_disk_size_gb = var.dev_node_disk_size_gb
 }
 
 # Output relevant information from the module
