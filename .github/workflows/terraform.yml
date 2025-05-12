@@ -5,12 +5,14 @@ on:
     branches:
       - main
     paths:
-      - '**'
+      - 'terraform-gcp/dev/**'
+      - 'terraform-gcp/prod/**'
   pull_request:
     branches:
       - main
     paths:
-      - '**'
+      - 'terraform-gcp/dev/**'
+      - 'terraform-gcp/prod/**'
 
 permissions:
   contents: read
@@ -24,10 +26,14 @@ jobs:
     strategy:
       matrix:
         environment: [dev, prod]
+      # Only run for environments that have changes
+      fail-fast: false
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for better change detection
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
@@ -45,22 +51,41 @@ jobs:
       with:
         install_components: 'gke-gcloud-auth-plugin'
 
-    - name: Write GCP Credentials
+    - name: Check for environment changes
+      id: check_changes
       run: |
-        echo '${{ secrets.GCP_CREDENTIALS }}' > gcp-credentials.json
+        # Get the list of changed files
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+        
+        # Check if changes are in the specific environment directory
+        if [[ "${{ matrix.environment }}" == "dev" ]]; then
+          if echo "$CHANGED_FILES" | grep -q "^terraform-gcp/dev/"; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+        elif [[ "${{ matrix.environment }}" == "prod" ]]; then
+          if echo "$CHANGED_FILES" | grep -q "^terraform-gcp/prod/"; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+        fi
 
     - name: Terraform Init
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd ${{ matrix.environment }}
         terraform init
 
     - name: Terraform Format
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd ${{ matrix.environment }}
         terraform fmt -check
 
     - name: Terraform Plan
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' && steps.check_changes.outputs.has_changes == 'true'
       id: plan
       run: |
         cd ${{ matrix.environment }}
@@ -71,7 +96,7 @@ jobs:
 
     - name: Update Pull Request
       uses: actions/github-script@v6
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' && steps.check_changes.outputs.has_changes == 'true'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -88,7 +113,12 @@ jobs:
           })
 
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd ${{ matrix.environment }}
+        # Add a safeguard to prevent accidental cluster destruction
+        if terraform plan -no-color | grep -q "will be destroyed"; then
+          echo "::error::This plan would destroy resources. Please review the plan carefully."
+          exit 1
+        fi
         terraform apply -auto-approve 

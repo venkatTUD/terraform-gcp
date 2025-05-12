@@ -1,18 +1,25 @@
 # dev/main.tf
 
-# # Define required providers
-# terraform {
-#   required_providers {
-#     google = {
-#       source = "hashicorp/google"
-#       version = "~> 5.0" # Use a suitable version constraint
-#     }
-#   }
-# }
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
 
+  # Add backend configuration if needed
+  # backend "gcs" {
+  #   bucket = "your-terraform-state-bucket"
+  #   prefix = "dev"
+  # }
+}
 
-
-
+provider "google" {
+  project     = var.gcp_project_id
+  region      = var.gcp_region
+  credentials = var.gcp_credentials_file != "" ? (fileexists(var.gcp_credentials_file) ? file(var.gcp_credentials_file) : null) : null
+}
 
 module "gke" {
   source               = "../modules/gke-cluster"

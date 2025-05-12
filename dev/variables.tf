@@ -14,7 +14,9 @@ variable "machine_type" {
   type = string
 }
 variable "gcp_credentials_file" {
-  type = string
+  type        = string
+  description = "Path to GCP credentials file. Leave empty to use application default credentials or environment variables."
+  default     = ""
 }
 
 # Define the variable for node disk size specific to dev
