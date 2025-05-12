@@ -1,21 +1,30 @@
 variable "gcp_project_id" {
-  type = string
+  description = "The GCP project ID"
+  type        = string
 }
 variable "gcp_region" {
-  type = string
+  description = "The GCP region"
+  type        = string
 }
 variable "cluster_name" {
-  type = string
+  description = "The name of the GKE cluster"
+  type        = string
 }
 variable "node_count" {
-  type = number
+  description = "The number of nodes in the node pool"
+  type        = number
 }
 variable "machine_type" {
-  type = string
+  description = "The machine type for the nodes"
+  type        = string
+}
+variable "node_disk_size_gb" {
+  description = "The disk size for the nodes in GB"
+  type        = number
 }
 variable "gcp_credentials_file" {
-  type        = string
   description = "Path to GCP credentials file. Leave empty to use application default credentials or environment variables."
+  type        = string
   default     = ""
 }
 
